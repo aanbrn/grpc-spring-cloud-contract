@@ -1,0 +1,5 @@
+grpc:
+  client:
+    example:
+      address: self://localhost
+      negotiation-type: plaintext

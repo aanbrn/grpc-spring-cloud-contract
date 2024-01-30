@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.github.aanbrn</groupId>
+        <artifactId>grpc-spring-cloud-contract-example</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>grpc-spring-cloud-contract-example-server</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.github.aanbrn</groupId>
+            <artifactId>grpc-spring-cloud-contract-example-proto</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-server-spring-boot-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.aanbrn</groupId>
+            <artifactId>grpc-spring-cloud-contract-verifier</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-client-spring-boot-starter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-contract-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <baseClassForTests>com.github.aanbrn.grpc.spring.cloud.contract.example.server.BaseContractTests</baseClassForTests>
+                    <testFramework>JUNIT5</testFramework>
+                    <testMode>CUSTOM</testMode>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,5 @@
+grpc:
+  client:
+    example:
+      address: static://localhost:${stubrunner.runningstubs.com.github.aanbrn.grpc-spring-cloud-contract-example-server.port}
+      negotiation-type: plaintext

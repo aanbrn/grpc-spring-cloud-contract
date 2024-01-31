@@ -43,7 +43,7 @@ class GrpcWireMockClientStreamingMethodHandler
             public void onCompleted() {
                 stubRequestHandler.handle(
                         new GrpcWireMockRequest(methodDescriptor, inputMessages),
-                        unaryMessageResponder(methodDescriptor, responseObserver));
+                        unaryResponder(methodDescriptor, responseObserver));
             }
         };
     }

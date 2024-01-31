@@ -17,7 +17,7 @@ import static java.lang.Integer.parseInt;
 
 abstract class GrpcWireMockMethodHandlerBase {
 
-    protected final HttpResponder unaryMessageResponder(
+    protected final HttpResponder unaryResponder(
             @NonNull MethodDescriptor methodDescriptor, @NonNull StreamObserver<DynamicMessage> responseObserver) {
         return (request, response) -> {
             HttpHeader statusHeader = response.getHeaders().getHeader("grpc-status");
@@ -42,7 +42,7 @@ abstract class GrpcWireMockMethodHandlerBase {
         };
     }
 
-    protected final HttpResponder streamingMessagesResponder(
+    protected final HttpResponder streamingResponder(
             @NonNull MethodDescriptor methodDescriptor, @NonNull StreamObserver<DynamicMessage> responseObserver) {
         return (request, response) -> {
             HttpHeader statusHeader = response.getHeaders().getHeader("grpc-status");

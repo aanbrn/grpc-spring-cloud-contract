@@ -22,6 +22,6 @@ class GrpcWireMockServerStreamingMethodHandler
     public void invoke(DynamicMessage inputMessage, StreamObserver<DynamicMessage> responseObserver) {
         stubRequestHandler.handle(
                 new GrpcWireMockRequest(methodDescriptor, inputMessage),
-                streamingMessagesResponder(methodDescriptor, responseObserver));
+                streamingResponder(methodDescriptor, responseObserver));
     }
 }

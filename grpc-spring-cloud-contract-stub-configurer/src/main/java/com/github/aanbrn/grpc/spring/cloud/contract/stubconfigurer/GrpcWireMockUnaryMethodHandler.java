@@ -22,6 +22,6 @@ class GrpcWireMockUnaryMethodHandler
     public void invoke(DynamicMessage inputMessage, StreamObserver<DynamicMessage> responseObserver) {
         stubRequestHandler.handle(
                 new GrpcWireMockRequest(methodDescriptor, inputMessage),
-                unaryMessageResponder(methodDescriptor, responseObserver));
+                unaryResponder(methodDescriptor, responseObserver));
     }
 }

@@ -141,14 +141,25 @@ public class GrpcHttpVerifier implements HttpVerifier {
             throw new IllegalStateException("Request body must contain a valid input message", e);
         }
 
-        DynamicMessage outputMessage = ClientCalls.blockingUnaryCall(call, inputMessage);
-        return Response.builder()
-                       .statusCode(HttpStatus.OK)
-                       .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
-                       .header("grpc-encoding", "identity")
-                       .header("grpc-accept-encoding", "gzip")
-                       .body(messageAsMap(outputMessage).toString())
-                       .build();
+        try {
+            DynamicMessage outputMessage = ClientCalls.blockingUnaryCall(call, inputMessage);
+            return Response.builder()
+                           .statusCode(HttpStatus.OK)
+                           .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
+                           .header("grpc-encoding", "identity")
+                           .header("grpc-accept-encoding", "gzip")
+                           .body(messageAsMap(outputMessage).toString())
+                           .build();
+        } catch (Exception e) {
+            Status status = Status.fromThrowable(e);
+            return Response
+                    .builder()
+                    .statusCode(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
+                    .header("grpc-status", status.getCode().value())
+                    .header("grpc-message", status.getDescription())
+                    .build();
+        }
     }
 
     private Response clientStreamingExchange(
@@ -162,12 +173,13 @@ public class GrpcHttpVerifier implements HttpVerifier {
             throw new IllegalStateException(
                     "Request body must contain an array of valid input messages", e);
         }
-        GrpcSingleResponseFuture<DynamicMessage> outputFuture = new GrpcSingleResponseFuture<>();
-        StreamObserver<DynamicMessage> inputObserver = ClientCalls.asyncClientStreamingCall(call, outputFuture);
-        inputMessages.forEach(inputObserver::onNext);
-        inputObserver.onCompleted();
 
         try {
+            GrpcSingleResponseFuture<DynamicMessage> outputFuture = new GrpcSingleResponseFuture<>();
+            StreamObserver<DynamicMessage> inputObserver = ClientCalls.asyncClientStreamingCall(call, outputFuture);
+            inputMessages.forEach(inputObserver::onNext);
+            inputObserver.onCompleted();
+
             DynamicMessage outputMessage = outputFuture.get();
             return Response.builder()
                            .statusCode(HttpStatus.OK)
@@ -199,19 +211,30 @@ public class GrpcHttpVerifier implements HttpVerifier {
             throw new IllegalStateException("Request body must contain a valid input message", e);
         }
 
-        Iterator<DynamicMessage> outputMessages =
-                ClientCalls.blockingServerStreamingCall(call, inputMessage);
-        return Response.builder()
-                       .statusCode(HttpStatus.OK)
-                       .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
-                       .header("grpc-encoding", "identity")
-                       .header("grpc-accept-encoding", "gzip")
-                       .body(messagesAsList(outputMessages)
-                                     .stream()
-                                     .map(DslProperty::new)
-                                     .toList()
-                                     .toString())
-                       .build();
+        try {
+            Iterator<DynamicMessage> outputMessages =
+                    ClientCalls.blockingServerStreamingCall(call, inputMessage);
+            return Response.builder()
+                           .statusCode(HttpStatus.OK)
+                           .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
+                           .header("grpc-encoding", "identity")
+                           .header("grpc-accept-encoding", "gzip")
+                           .body(messagesAsList(outputMessages)
+                                         .stream()
+                                         .map(DslProperty::new)
+                                         .toList()
+                                         .toString())
+                           .build();
+        } catch (Exception e) {
+            Status status = Status.fromThrowable(e);
+            return Response
+                    .builder()
+                    .statusCode(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
+                    .header("grpc-status", status.getCode().value())
+                    .header("grpc-message", status.getDescription())
+                    .build();
+        }
     }
 
     private Response bidiStreamingExchange(
@@ -225,12 +248,13 @@ public class GrpcHttpVerifier implements HttpVerifier {
             throw new IllegalStateException(
                     "Request body must contain an array of valid input messages", e);
         }
-        GrpcMultipleResponseFuture<DynamicMessage> outputFuture = new GrpcMultipleResponseFuture<>();
-        StreamObserver<DynamicMessage> inputObserver = ClientCalls.asyncBidiStreamingCall(call, outputFuture);
-        inputMessages.forEach(inputObserver::onNext);
-        inputObserver.onCompleted();
 
         try {
+            GrpcMultipleResponseFuture<DynamicMessage> outputFuture = new GrpcMultipleResponseFuture<>();
+            StreamObserver<DynamicMessage> inputObserver = ClientCalls.asyncBidiStreamingCall(call, outputFuture);
+            inputMessages.forEach(inputObserver::onNext);
+            inputObserver.onCompleted();
+
             List<DynamicMessage> outputMessages = outputFuture.get();
             return Response.builder()
                            .statusCode(HttpStatus.OK)

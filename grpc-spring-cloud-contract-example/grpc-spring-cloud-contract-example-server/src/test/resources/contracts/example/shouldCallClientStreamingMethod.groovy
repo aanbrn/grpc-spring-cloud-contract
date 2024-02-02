@@ -41,10 +41,5 @@ Contract.make {
         body([
                 value: [1, 2, 3, 4, 5]
         ])
-        metadata([
-                verifierHttp: [
-                        protocol: ContractVerifierHttpMetaData.Protocol.H2_PRIOR_KNOWLEDGE
-                ]
-        ])
     }
 }

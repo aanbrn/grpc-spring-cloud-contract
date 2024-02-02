@@ -55,10 +55,5 @@ Contract.make {
                         value: 5
                 ]
         ])
-        metadata([
-                verifierHttp: [
-                        protocol: ContractVerifierHttpMetaData.Protocol.H2_PRIOR_KNOWLEDGE
-                ]
-        ])
     }
 }

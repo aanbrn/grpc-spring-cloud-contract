@@ -6,15 +6,8 @@ import com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcUtils;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.DynamicMessage;
-import io.grpc.BindableService;
-import io.grpc.CallOptions;
-import io.grpc.Channel;
-import io.grpc.ClientCall;
-import io.grpc.MethodDescriptor;
+import io.grpc.*;
 import io.grpc.MethodDescriptor.Marshaller;
-import io.grpc.ServerMethodDefinition;
-import io.grpc.ServerServiceDefinition;
-import io.grpc.Status;
 import io.grpc.internal.GrpcUtil;
 import io.grpc.protobuf.ProtoMethodDescriptorSupplier;
 import io.grpc.protobuf.ProtoUtils;
@@ -25,23 +18,14 @@ import org.springframework.cloud.contract.spec.internal.DslProperty;
 import org.springframework.cloud.contract.spec.internal.HttpHeaders;
 import org.springframework.cloud.contract.spec.internal.HttpMethods.HttpMethod;
 import org.springframework.cloud.contract.spec.internal.HttpStatus;
-import org.springframework.cloud.contract.verifier.http.ContractVerifierHttpMetaData.Protocol;
-import org.springframework.cloud.contract.verifier.http.ContractVerifierHttpMetaData.Scheme;
 import org.springframework.cloud.contract.verifier.http.HttpVerifier;
 import org.springframework.cloud.contract.verifier.http.Request;
 import org.springframework.cloud.contract.verifier.http.Response;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcUtils.messageAsMap;
-import static com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcUtils.messageFromJson;
-import static com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcUtils.messagesAsList;
-import static com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcUtils.messagesFromJson;
+import static com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcUtils.*;
 import static shaded.com.google.common.base.Preconditions.checkArgument;
 
 public class GrpcHttpVerifier implements HttpVerifier {
@@ -66,12 +50,6 @@ public class GrpcHttpVerifier implements HttpVerifier {
 
     @Override
     public Response exchange(@NonNull Request request) {
-        if (request.protocol() != null && request.protocol() != Protocol.H2_PRIOR_KNOWLEDGE) {
-            throw new IllegalArgumentException("H2_PRIOR_KNOWLEDGE protocol is supported only");
-        }
-        if (request.scheme() != null && request.scheme() != Scheme.HTTP) {
-            throw new IllegalArgumentException("HTTP scheme is supported only");
-        }
         if (request.method() != null && request.method() != HttpMethod.POST) {
             throw new IllegalArgumentException("POST request method is supported only");
         }
@@ -118,7 +96,7 @@ public class GrpcHttpVerifier implements HttpVerifier {
         ClientCall<DynamicMessage, DynamicMessage> call =
                 channel.newCall(
                         grpcMethod.toBuilder(inputMessageMarshaller, outputMessageMarshaller)
-                                  .build(),
+                                .build(),
                         CallOptions.DEFAULT);
 
         return switch (grpcMethod.getType()) {
@@ -144,12 +122,12 @@ public class GrpcHttpVerifier implements HttpVerifier {
         try {
             DynamicMessage outputMessage = ClientCalls.blockingUnaryCall(call, inputMessage);
             return Response.builder()
-                           .statusCode(HttpStatus.OK)
-                           .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
-                           .header("grpc-encoding", "identity")
-                           .header("grpc-accept-encoding", "gzip")
-                           .body(messageAsMap(outputMessage).toString())
-                           .build();
+                    .statusCode(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
+                    .header("grpc-encoding", "identity")
+                    .header("grpc-accept-encoding", "gzip")
+                    .body(messageAsMap(outputMessage).toString())
+                    .build();
         } catch (Exception e) {
             Status status = Status.fromThrowable(e);
             return Response
@@ -182,12 +160,12 @@ public class GrpcHttpVerifier implements HttpVerifier {
 
             DynamicMessage outputMessage = outputFuture.get();
             return Response.builder()
-                           .statusCode(HttpStatus.OK)
-                           .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
-                           .header("grpc-encoding", "identity")
-                           .header("grpc-accept-encoding", "gzip")
-                           .body(messageAsMap(outputMessage).toString())
-                           .build();
+                    .statusCode(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
+                    .header("grpc-encoding", "identity")
+                    .header("grpc-accept-encoding", "gzip")
+                    .body(messageAsMap(outputMessage).toString())
+                    .build();
         } catch (Exception e) {
             Status status = Status.fromThrowable(e);
             return Response
@@ -215,16 +193,16 @@ public class GrpcHttpVerifier implements HttpVerifier {
             Iterator<DynamicMessage> outputMessages =
                     ClientCalls.blockingServerStreamingCall(call, inputMessage);
             return Response.builder()
-                           .statusCode(HttpStatus.OK)
-                           .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
-                           .header("grpc-encoding", "identity")
-                           .header("grpc-accept-encoding", "gzip")
-                           .body(messagesAsList(outputMessages)
-                                         .stream()
-                                         .map(DslProperty::new)
-                                         .toList()
-                                         .toString())
-                           .build();
+                    .statusCode(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
+                    .header("grpc-encoding", "identity")
+                    .header("grpc-accept-encoding", "gzip")
+                    .body(messagesAsList(outputMessages)
+                            .stream()
+                            .map(DslProperty::new)
+                            .toList()
+                            .toString())
+                    .build();
         } catch (Exception e) {
             Status status = Status.fromThrowable(e);
             return Response
@@ -257,16 +235,16 @@ public class GrpcHttpVerifier implements HttpVerifier {
 
             List<DynamicMessage> outputMessages = outputFuture.get();
             return Response.builder()
-                           .statusCode(HttpStatus.OK)
-                           .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
-                           .header("grpc-encoding", "identity")
-                           .header("grpc-accept-encoding", "gzip")
-                           .body(messagesAsList(outputMessages)
-                                         .stream()
-                                         .map(DslProperty::new)
-                                         .toList()
-                                         .toString())
-                           .build();
+                    .statusCode(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
+                    .header("grpc-encoding", "identity")
+                    .header("grpc-accept-encoding", "gzip")
+                    .body(messagesAsList(outputMessages)
+                            .stream()
+                            .map(DslProperty::new)
+                            .toList()
+                            .toString())
+                    .build();
         } catch (Exception e) {
             Status status = Status.fromThrowable(e);
             return Response

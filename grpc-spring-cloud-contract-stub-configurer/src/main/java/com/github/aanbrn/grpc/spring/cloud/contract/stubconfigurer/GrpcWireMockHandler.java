@@ -1,17 +1,10 @@
 package com.github.aanbrn.grpc.spring.cloud.contract.stubconfigurer;
 
 import com.github.tomakehurst.wiremock.http.StubRequestHandler;
-import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import io.grpc.InternalChannelz.SocketStats;
-import io.grpc.InternalInstrumented;
-import io.grpc.MethodDescriptor;
-import io.grpc.MethodDescriptor.Marshaller;
-import io.grpc.Server;
-import io.grpc.ServerMethodDefinition;
-import io.grpc.ServerServiceDefinition;
+import io.grpc.*;
 import io.grpc.ServerStreamTracer.Factory;
-import io.grpc.ServiceDescriptor;
 import io.grpc.internal.GrpcUtil;
 import io.grpc.internal.InternalServer;
 import io.grpc.internal.ServerImplBuilder;
@@ -20,6 +13,7 @@ import io.grpc.protobuf.ProtoMethodDescriptorSupplier;
 import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.ServerCalls;
 import lombok.NonNull;
+import lombok.val;
 import wiremock.javax.servlet.ServletException;
 import wiremock.javax.servlet.http.HttpServletRequest;
 import wiremock.javax.servlet.http.HttpServletResponse;
@@ -33,6 +27,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static shaded.com.google.common.base.Preconditions.checkArgument;
 import static shaded.com.google.common.base.Preconditions.checkState;
@@ -43,40 +38,38 @@ class GrpcWireMockHandler extends HandlerWrapper implements InternalServer {
 
     private List<? extends Factory> streamTracerFactories;
 
-    private volatile ServerListener serverListener;
+    private final AtomicReference<ServerListener> serverListener = new AtomicReference<>();
 
     GrpcWireMockHandler(
-            @NonNull Handler handler,
-            @NonNull StubRequestHandler stubRequestHandler,
-            @NonNull Collection<ServiceDescriptor> services) {
+            @NonNull final Handler handler,
+            @NonNull final StubRequestHandler stubRequestHandler,
+            @NonNull final Collection<ServiceDescriptor> services) {
         checkArgument(!services.isEmpty(), "Argument 'services' cannot be empty");
 
         setHandler(handler);
 
-        ServerImplBuilder serverBuilder = new ServerImplBuilder(streamTracerFactories -> {
-            this.streamTracerFactories = streamTracerFactories;
+        val serverBuilder = new ServerImplBuilder(streamTracerFactories -> {
+            this.streamTracerFactories = List.copyOf(streamTracerFactories);
             return GrpcWireMockHandler.this;
         });
 
-        for (ServiceDescriptor service : services) {
-            ServerServiceDefinition.Builder serverServiceDefinition =
-                    ServerServiceDefinition.builder(service.getName());
+        for (val service : services) {
+            val serverServiceDefinition = ServerServiceDefinition.builder(service.getName());
 
-            for (MethodDescriptor<?, ?> method : service.getMethods()) {
+            for (val method : service.getMethods()) {
                 checkState(method.getSchemaDescriptor() instanceof ProtoMethodDescriptorSupplier,
-                           "No schema descriptor for the gRPC method: " + method);
+                        "No schema descriptor for the gRPC method: " + method);
 
-                Descriptors.MethodDescriptor protoMethod =
+                val protoMethod =
                         ((ProtoMethodDescriptorSupplier) method.getSchemaDescriptor()).getMethodDescriptor();
-                Marshaller<DynamicMessage> methodRequestMarshaller = ProtoUtils.marshaller(
+                val methodRequestMarshaller = ProtoUtils.marshaller(
                         DynamicMessage.getDefaultInstance(protoMethod.getInputType()));
-                Marshaller<DynamicMessage> methodResponseMarshaller = ProtoUtils.marshaller(
+                val methodResponseMarshaller = ProtoUtils.marshaller(
                         DynamicMessage.getDefaultInstance(protoMethod.getOutputType()));
 
                 serverServiceDefinition.addMethod(
                         ServerMethodDefinition.create(
-                                method.toBuilder(methodRequestMarshaller, methodResponseMarshaller)
-                                          .build(),
+                                method.toBuilder(methodRequestMarshaller, methodResponseMarshaller).build(),
                                 switch (method.getType()) {
                                     case UNARY -> ServerCalls.asyncUnaryCall(
                                             new GrpcWireMockUnaryMethodHandler(
@@ -102,22 +95,15 @@ class GrpcWireMockHandler extends HandlerWrapper implements InternalServer {
     }
 
     @Override
-    public void start(@NonNull ServerListener serverListener) {
-        this.serverListener = serverListener;
+    public void start(@NonNull final ServerListener serverListener) {
+        this.serverListener.set(serverListener);
     }
 
     @Override
     public void shutdown() {
-        if (this.serverListener != null) {
-            synchronized (this) {
-                if (this.serverListener != null) {
-                    try {
-                        this.serverListener.serverShutdown();
-                    } finally {
-                        this.serverListener = null;
-                    }
-                }
-            }
+        val serverListener = this.serverListener.getAndSet(null);
+        if (serverListener != null) {
+            serverListener.serverShutdown();
         }
     }
 
@@ -149,16 +135,18 @@ class GrpcWireMockHandler extends HandlerWrapper implements InternalServer {
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException {
+    public void handle(
+            final String target, final Request baseRequest, final HttpServletRequest request,
+            final HttpServletResponse response) throws IOException, ServletException {
         if (!GrpcUtil.isGrpcContentType(baseRequest.getContentType())) {
             super.handle(target, baseRequest, request, response);
             return;
         }
 
+        val serverListener = this.serverListener.get();
         checkState(serverListener != null, "gRPC server must be running");
 
-        GrpcWireMockServerTransport serverTransport =
+        val serverTransport =
                 new GrpcWireMockServerTransport(baseRequest, (Response) response, streamTracerFactories);
         serverTransport.start(serverListener.transportCreated(serverTransport));
     }

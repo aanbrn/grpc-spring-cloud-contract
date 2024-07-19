@@ -10,14 +10,14 @@ public class GrpcSingleResponseFuture<T extends Message> extends AbstractFuture<
     private T message;
 
     @Override
-    public void onNext(T message) {
+    public void onNext(final T message) {
         if (this.message == null) {
             this.message = message;
         }
     }
 
     @Override
-    public void onError(Throwable t) {
+    public void onError(final Throwable t) {
         setException(t);
     }
 

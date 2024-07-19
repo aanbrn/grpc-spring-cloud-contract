@@ -50,7 +50,8 @@
                 <artifactId>spring-cloud-contract-maven-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
-                    <baseClassForTests>com.github.aanbrn.grpc.spring.cloud.contract.example.server.BaseContractTests</baseClassForTests>
+                    <baseClassForTests>com.github.aanbrn.grpc.spring.cloud.contract.example.server.BaseContractTests
+                    </baseClassForTests>
                     <testFramework>JUNIT5</testFramework>
                     <testMode>CUSTOM</testMode>
                 </configuration>

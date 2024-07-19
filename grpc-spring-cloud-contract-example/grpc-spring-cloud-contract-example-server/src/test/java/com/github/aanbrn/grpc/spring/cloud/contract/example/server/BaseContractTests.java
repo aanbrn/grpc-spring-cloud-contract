@@ -5,6 +5,7 @@ import com.github.aanbrn.grpc.spring.cloud.contract.verifier.GrpcHttpVerifier;
 import io.grpc.BindableService;
 import io.grpc.Channel;
 import lombok.NonNull;
+import lombok.val;
 import net.devh.boot.grpc.client.channelfactory.GrpcChannelFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -27,8 +28,9 @@ abstract class BaseContractTests {
         @Bean
         @DependsOn("grpcNameResolverRegistration")
         HttpVerifier grpcHttpVerifier(
-                @NonNull GrpcChannelFactory grpcChannelFactory, @NonNull List<BindableService> grpcServices) {
-            Channel channel = grpcChannelFactory.createChannel("example");
+                @NonNull final GrpcChannelFactory grpcChannelFactory,
+                @NonNull final List<BindableService> grpcServices) {
+            val channel = grpcChannelFactory.createChannel("example");
             return new GrpcHttpVerifier(channel, grpcServices);
         }
     }

@@ -19,7 +19,7 @@ class GrpcWireMockUnaryMethodHandler
     private final StubRequestHandler stubRequestHandler;
 
     @Override
-    public void invoke(DynamicMessage inputMessage, StreamObserver<DynamicMessage> responseObserver) {
+    public void invoke(final DynamicMessage inputMessage, final StreamObserver<DynamicMessage> responseObserver) {
         stubRequestHandler.handle(
                 new GrpcWireMockRequest(methodDescriptor, inputMessage),
                 unaryResponder(methodDescriptor, responseObserver));

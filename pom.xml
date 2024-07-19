@@ -21,9 +21,9 @@
     </modules>
 
     <properties>
-        <spring-cloud-contract.version>4.1.1</spring-cloud-contract.version>
-        <protobuf.version>3.25.2</protobuf.version>
-        <grpc.version>1.61.0</grpc.version>
+        <spring-cloud-contract.version>4.1.4</spring-cloud-contract.version>
+        <protobuf.version>4.27.2</protobuf.version>
+        <grpc.version>1.65.1</grpc.version>
     </properties>
 
     <dependencyManagement>

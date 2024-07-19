@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 @GrpcClientBean(clazz = ExampleServiceStub.class, client = @GrpcClient("example"))
 class ExampleClientApplication {
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         SpringApplication.run(ExampleClientApplication.class, args);
     }
 }

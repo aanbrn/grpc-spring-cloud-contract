@@ -26,7 +26,7 @@ The main problem is related to how to conveniently represent the request and res
 standard test and stub generators handle them in case of the gRPC content type that is unknown for them. Especially, in
 case of a streaming method, when there is a need to represent the body as an array of messages.
 
-Currently, the test generator represents the request and response bodies improperly in case of an array of objects. 
+Currently, the test generator represents the request and response bodies improperly in case of an array of objects.
 A couple of workarounds were introduced to handle it.
 
 A more proper way probably is to extend the standard test and stub generators to add support for the gRPC content type,

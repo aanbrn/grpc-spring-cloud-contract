@@ -4,17 +4,10 @@ import com.github.aanbrn.grpc.spring.cloud.contract.example.client.ExampleClient
 import com.github.aanbrn.grpc.spring.cloud.contract.stubconfigurer.GrpcWireMockHttpServerStubConfigurer;
 import com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcMultipleResponseFuture;
 import com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcSingleResponseFuture;
-import com.github.aanbrn.spring.cloud.contract.example.BidiStreamingRequest;
-import com.github.aanbrn.spring.cloud.contract.example.BidiStreamingResponse;
-import com.github.aanbrn.spring.cloud.contract.example.ClientStreamingRequest;
-import com.github.aanbrn.spring.cloud.contract.example.ClientStreamingResponse;
-import com.github.aanbrn.spring.cloud.contract.example.ExampleServiceGrpc;
+import com.github.aanbrn.spring.cloud.contract.example.*;
 import com.github.aanbrn.spring.cloud.contract.example.ExampleServiceGrpc.ExampleServiceStub;
-import com.github.aanbrn.spring.cloud.contract.example.ServerStreamingRequest;
-import com.github.aanbrn.spring.cloud.contract.example.ServerStreamingResponse;
-import com.github.aanbrn.spring.cloud.contract.example.UnaryRequest;
-import com.github.aanbrn.spring.cloud.contract.example.UnaryResponse;
 import io.grpc.stub.StreamObserver;
+import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,26 +38,25 @@ class ExampleClientTests {
 
     @Test
     void shouldCallUnaryMethod() throws Exception {
-        UnaryRequest request =
+        val request =
                 UnaryRequest
                         .newBuilder()
                         .setValue(1)
                         .build();
-        GrpcSingleResponseFuture<UnaryResponse> responseFuture = new GrpcSingleResponseFuture<>();
+        val responseFuture = new GrpcSingleResponseFuture<UnaryResponse>();
 
         exampleService.unaryMethod(request, responseFuture);
 
-        UnaryResponse response = responseFuture.get();
+        val response = responseFuture.get();
         assertThat(response).isNotNull();
         assertThat(response.getValue()).isEqualTo(request.getValue());
     }
 
     @Test
     void shouldCallClientStreamingMethod() throws Exception {
-        GrpcSingleResponseFuture<ClientStreamingResponse> responseFuture = new GrpcSingleResponseFuture<>();
+        val responseFuture = new GrpcSingleResponseFuture<ClientStreamingResponse>();
 
-        StreamObserver<ClientStreamingRequest> clientStreamObserver =
-                exampleService.clientStreamingMethod(responseFuture);
+        val clientStreamObserver = exampleService.clientStreamingMethod(responseFuture);
         for (int value = 1; value <= 5; value++) {
             clientStreamObserver.onNext(
                     ClientStreamingRequest
@@ -74,14 +66,14 @@ class ExampleClientTests {
         }
         clientStreamObserver.onCompleted();
 
-        ClientStreamingResponse response = responseFuture.get();
+        val response = responseFuture.get();
         assertThat(response).isNotNull();
         assertThat(response.getValueList()).containsExactly(1L, 2L, 3L, 4L, 5L);
     }
 
     @Test
     void shouldCallServerStreamingMethod() throws Exception {
-        GrpcMultipleResponseFuture<ServerStreamingResponse> responseFuture = new GrpcMultipleResponseFuture<>();
+        val responseFuture = new GrpcMultipleResponseFuture<ServerStreamingResponse>();
 
         exampleService.serverStreamingMethod(
                 ServerStreamingRequest
@@ -94,7 +86,7 @@ class ExampleClientTests {
                         .build(),
                 responseFuture);
 
-        List<ServerStreamingResponse> responses = responseFuture.get();
+        val responses = responseFuture.get();
         assertThat(responses)
                 .isNotNull()
                 .hasSize(5);
@@ -122,9 +114,9 @@ class ExampleClientTests {
 
     @Test
     void shouldCallBidiServerStreamingMethod() throws Exception {
-        GrpcMultipleResponseFuture<BidiStreamingResponse> responseFuture = new GrpcMultipleResponseFuture<>();
+        val responseFuture = new GrpcMultipleResponseFuture<BidiStreamingResponse>();
 
-        StreamObserver<BidiStreamingRequest> clientStreamObserver = exampleService.bidiStreamingMethod(responseFuture);
+        val clientStreamObserver = exampleService.bidiStreamingMethod(responseFuture);
         for (int value = 1; value <= 5; value++) {
             clientStreamObserver.onNext(
                     BidiStreamingRequest
@@ -134,7 +126,7 @@ class ExampleClientTests {
         }
         clientStreamObserver.onCompleted();
 
-        List<BidiStreamingResponse> responses = responseFuture.get();
+        val responses = responseFuture.get();
         assertThat(responses)
                 .isNotNull()
                 .hasSize(5);

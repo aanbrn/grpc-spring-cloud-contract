@@ -3,17 +3,8 @@ package com.github.aanbrn.grpc.spring.cloud.contract.stubconfigurer;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.grpc.Metadata;
 import io.grpc.Status;
-import io.grpc.internal.AbstractServerStream;
-import io.grpc.internal.GrpcUtil;
-import io.grpc.internal.SerializingExecutor;
-import io.grpc.internal.StatsTraceContext;
-import io.grpc.internal.TransportFrameUtil;
-import io.grpc.internal.TransportTracer;
-import io.grpc.internal.WritableBuffer;
-import lombok.AccessLevel;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import io.grpc.internal.*;
+import lombok.*;
 import wiremock.javax.servlet.AsyncEvent;
 import wiremock.javax.servlet.AsyncListener;
 import wiremock.javax.servlet.ServletOutputStream;
@@ -45,21 +36,21 @@ class GrpcWireMockServerStream extends AbstractServerStream {
         @Setter(AccessLevel.PRIVATE)
         private GrpcWireMockServerStream stream;
 
-        GrpcWireMockServerTransportState(StatsTraceContext statsTraceContext) {
+        GrpcWireMockServerTransportState(final StatsTraceContext statsTraceContext) {
             super(DEFAULT_MAX_MESSAGE_SIZE, statsTraceContext, new TransportTracer());
         }
 
         @Override
-        public void runOnTransportThread(@NonNull Runnable runnable) {
+        public void runOnTransportThread(@NonNull final Runnable runnable) {
             transportThreadExecutor.execute(runnable);
         }
 
         @Override
-        public void bytesRead(int numBytes) {
+        public void bytesRead(final int numBytes) {
         }
 
         @Override
-        public void deframeFailed(@NonNull Throwable cause) {
+        public void deframeFailed(@NonNull final Throwable cause) {
             if (stream != null) {
                 stream.cancel(Status.fromThrowable(cause));
             }
@@ -74,7 +65,7 @@ class GrpcWireMockServerStream extends AbstractServerStream {
 
         private int offset;
 
-        ByteArrayWritableBuffer(int capacityHint) {
+        ByteArrayWritableBuffer(final int capacityHint) {
             this.capacity = min(max(4096, capacityHint), 1024 * 1024);
             this.bytes = new byte[this.capacity];
         }
@@ -128,7 +119,7 @@ class GrpcWireMockServerStream extends AbstractServerStream {
         }
 
         @Override
-        public void writeHeaders(Metadata headers, boolean flush) {
+        public void writeHeaders(final Metadata headers, final boolean flush) {
             headers.discardAll(CONTENT_TYPE_KEY);
             headers.discardAll(GrpcUtil.TE_HEADER);
             headers.discardAll(GrpcUtil.USER_AGENT_KEY);
@@ -136,7 +127,7 @@ class GrpcWireMockServerStream extends AbstractServerStream {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(GrpcUtil.CONTENT_TYPE_GRPC);
 
-            byte[][] serializedHeaders = TransportFrameUtil.toHttp2Headers(headers);
+            val serializedHeaders = TransportFrameUtil.toHttp2Headers(headers);
             for (int i = 0; i < serializedHeaders.length; i += 2) {
                 response.addHeader(
                         new String(serializedHeaders[i], StandardCharsets.US_ASCII),
@@ -155,14 +146,14 @@ class GrpcWireMockServerStream extends AbstractServerStream {
         }
 
         @Override
-        public void writeFrame(WritableBuffer frame, boolean flush, int numMessages) {
+        public void writeFrame(final WritableBuffer frame, final boolean flush, final int numMessages) {
             if (frame == null && !flush) {
                 return;
             }
 
             try {
                 if (frame != null) {
-                    int numBytes = frame.readableBytes();
+                    val numBytes = frame.readableBytes();
                     if (numBytes > 0) {
                         onSendingBytes(numBytes);
                     }
@@ -183,12 +174,12 @@ class GrpcWireMockServerStream extends AbstractServerStream {
         }
 
         @Override
-        public void writeTrailers(@NonNull Metadata trailers, boolean headersSent, Status status) {
+        public void writeTrailers(@NonNull final Metadata trailers, final boolean headersSent, final Status status) {
             if (headersSent) {
-                byte[][] serializedHeaders = TransportFrameUtil.toHttp2Headers(trailers);
+                val serializedHeaders = TransportFrameUtil.toHttp2Headers(trailers);
                 for (int i = 0; i < serializedHeaders.length; i += 2) {
-                    String key = new String(serializedHeaders[i], StandardCharsets.US_ASCII);
-                    String newValue = new String(serializedHeaders[i + 1], StandardCharsets.US_ASCII);
+                    val key = new String(serializedHeaders[i], StandardCharsets.US_ASCII);
+                    val newValue = new String(serializedHeaders[i + 1], StandardCharsets.US_ASCII);
                     httpTrailers.add(key, newValue);
                 }
             } else {
@@ -208,7 +199,7 @@ class GrpcWireMockServerStream extends AbstractServerStream {
         }
 
         @Override
-        public void cancel(@NonNull Status status) {
+        public void cancel(@NonNull final Status status) {
             transportState.runOnTransportThread(() -> transportState.transportReportStatus(status));
 
             if (response.isCommitted() || status == Status.DEADLINE_EXCEEDED) {
@@ -233,14 +224,14 @@ class GrpcWireMockServerStream extends AbstractServerStream {
         }
 
         @Override
-        public void onError(@NonNull Throwable t) {
+        public void onError(@NonNull final Throwable t) {
             closeQuietly(output);
 
             cancel(Status.fromThrowable(t));
         }
 
         @Override
-        public void onError(@NonNull AsyncEvent event) {
+        public void onError(@NonNull final AsyncEvent event) {
             if (!response.isCommitted()) {
                 cancel(Status.fromThrowable(event.getThrowable()));
             } else {
@@ -250,7 +241,7 @@ class GrpcWireMockServerStream extends AbstractServerStream {
         }
 
         @Override
-        public void onTimeout(AsyncEvent event) {
+        public void onTimeout(final AsyncEvent event) {
             if (!response.isCommitted()) {
                 cancel(Status.DEADLINE_EXCEEDED);
             } else {
@@ -260,14 +251,14 @@ class GrpcWireMockServerStream extends AbstractServerStream {
         }
 
         @Override
-        public void onStartAsync(AsyncEvent event) {
+        public void onStartAsync(final AsyncEvent event) {
         }
 
         @Override
-        public void onComplete(AsyncEvent event) {
+        public void onComplete(final AsyncEvent event) {
         }
 
-        private void execute(@NonNull OutputTask outputTask) throws IOException {
+        private void execute(@NonNull final OutputTask outputTask) throws IOException {
             outputQueue.add(outputTask);
             drainOutputQueue();
         }
@@ -276,7 +267,7 @@ class GrpcWireMockServerStream extends AbstractServerStream {
             if (output.isReady() && outputting.compareAndSet(false, true)) {
                 try {
                     while (output.isReady()) {
-                        OutputTask outputTask = outputQueue.poll();
+                        val outputTask = outputQueue.poll();
                         if (outputTask != null) {
                             outputTask.run();
                         } else {
@@ -299,9 +290,9 @@ class GrpcWireMockServerStream extends AbstractServerStream {
     private final GrpcWireMockServerStreamSink sink;
 
     GrpcWireMockServerStream(
-            @NonNull AsyncContextState asyncContext,
-            @NonNull GrpcWireMockServerTransportState transportState,
-            @NonNull StatsTraceContext statsTraceContext) throws IOException {
+            @NonNull final AsyncContextState asyncContext,
+            @NonNull final GrpcWireMockServerTransportState transportState,
+            @NonNull final StatsTraceContext statsTraceContext) throws IOException {
         super(ByteArrayWritableBuffer::new, statsTraceContext);
 
         this.asyncContext = asyncContext;

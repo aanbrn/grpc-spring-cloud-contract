@@ -6,19 +6,10 @@ import io.grpc.Attributes;
 import io.grpc.Grpc;
 import io.grpc.InternalChannelz.SocketStats;
 import io.grpc.InternalLogId;
-import io.grpc.Metadata;
 import io.grpc.ServerStreamTracer.Factory;
 import io.grpc.Status;
-import io.grpc.internal.GrpcUtil;
-import io.grpc.internal.ReadableBuffers;
-import io.grpc.internal.ServerTransport;
-import io.grpc.internal.ServerTransportListener;
-import io.grpc.internal.SharedResourceHolder;
-import io.grpc.internal.StatsTraceContext;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import io.grpc.internal.*;
+import lombok.*;
 import wiremock.javax.servlet.ReadListener;
 import wiremock.javax.servlet.ServletInputStream;
 import wiremock.org.eclipse.jetty.server.AsyncContextState;
@@ -55,7 +46,7 @@ class GrpcWireMockServerTransport implements ServerTransport {
         @Override
         public void onDataAvailable() throws IOException {
             while (input.isReady()) {
-                int length = input.read(buffer);
+                val length = input.read(buffer);
                 if (length == -1) {
                     break;
                 }
@@ -99,22 +90,22 @@ class GrpcWireMockServerTransport implements ServerTransport {
 
     private GrpcWireMockServerStream stream;
 
-    void start(@NonNull ServerTransportListener serverTransportListener) throws IOException {
+    void start(@NonNull final ServerTransportListener serverTransportListener) throws IOException {
         this.serverTransportListener = serverTransportListener;
 
         checkState(request.isAsyncSupported(), "Request must support asynchronous operation");
 
-        String methodName = GrpcWireMockUtils.extractMethodName(request);
-        Metadata headers = GrpcWireMockUtils.extractHeaders(request);
+        val methodName = GrpcWireMockUtils.extractMethodName(request);
+        val headers = GrpcWireMockUtils.extractHeaders(request);
 
-        SocketAddress localAddress;
+        final SocketAddress localAddress;
         try {
             localAddress = new InetSocketAddress(
                     InetAddress.getByName(request.getLocalAddr()), request.getLocalPort());
         } catch (UnknownHostException e) {
             throw new IllegalStateException(e);
         }
-        SocketAddress remoteAddress;
+        final SocketAddress remoteAddress;
         try {
             remoteAddress = new InetSocketAddress(
                     InetAddress.getByName(request.getRemoteAddr()), request.getRemotePort());
@@ -124,23 +115,22 @@ class GrpcWireMockServerTransport implements ServerTransport {
 
         this.serverTransportListener.transportReady(
                 Attributes.newBuilder()
-                          .set(Grpc.TRANSPORT_ATTR_LOCAL_ADDR, localAddress)
-                          .set(Grpc.TRANSPORT_ATTR_REMOTE_ADDR, remoteAddress)
-                          .build());
+                        .set(Grpc.TRANSPORT_ATTR_LOCAL_ADDR, localAddress)
+                        .set(Grpc.TRANSPORT_ATTR_REMOTE_ADDR, remoteAddress)
+                        .build());
 
-        AsyncContextState asyncContext = (AsyncContextState) request.startAsync(request, response);
+        val asyncContext = (AsyncContextState) request.startAsync(request, response);
 
-        StatsTraceContext statsTraceContext =
-                StatsTraceContext.newServerContext(streamTracerFactories, methodName, headers);
+        val statsTraceContext = StatsTraceContext.newServerContext(streamTracerFactories, methodName, headers);
 
-        GrpcWireMockServerTransportState transportState = new GrpcWireMockServerTransportState(statsTraceContext);
+        val transportState = new GrpcWireMockServerTransportState(statsTraceContext);
 
         stream = new GrpcWireMockServerStream(asyncContext, transportState, statsTraceContext);
         serverTransportListener.streamCreated(stream, methodName, headers);
 
         stream.start();
 
-        GrpcWireMockServerTransportSource source = new GrpcWireMockServerTransportSource(request.getInputStream());
+        val source = new GrpcWireMockServerTransportSource(request.getInputStream());
         source.start();
     }
 

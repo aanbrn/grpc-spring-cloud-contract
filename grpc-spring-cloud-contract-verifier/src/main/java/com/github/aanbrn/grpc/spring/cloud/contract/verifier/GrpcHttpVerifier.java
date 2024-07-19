@@ -3,17 +3,15 @@ package com.github.aanbrn.grpc.spring.cloud.contract.verifier;
 import com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcMultipleResponseFuture;
 import com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcSingleResponseFuture;
 import com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcUtils;
-import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.DynamicMessage;
 import io.grpc.*;
-import io.grpc.MethodDescriptor.Marshaller;
 import io.grpc.internal.GrpcUtil;
 import io.grpc.protobuf.ProtoMethodDescriptorSupplier;
 import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.ClientCalls;
-import io.grpc.stub.StreamObserver;
 import lombok.NonNull;
+import lombok.val;
 import org.springframework.cloud.contract.spec.internal.DslProperty;
 import org.springframework.cloud.contract.spec.internal.HttpHeaders;
 import org.springframework.cloud.contract.spec.internal.HttpMethods.HttpMethod;
@@ -23,7 +21,10 @@ import org.springframework.cloud.contract.verifier.http.Request;
 import org.springframework.cloud.contract.verifier.http.Response;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.github.aanbrn.grpc.spring.cloud.contract.util.GrpcUtils.*;
 import static shaded.com.google.common.base.Preconditions.checkArgument;
@@ -34,22 +35,22 @@ public class GrpcHttpVerifier implements HttpVerifier {
 
     private final Map<String, MethodDescriptor<?, ?>> methods = new HashMap<>();
 
-    public GrpcHttpVerifier(@NonNull Channel channel, @NonNull Collection<BindableService> services) {
+    public GrpcHttpVerifier(@NonNull final Channel channel, @NonNull final Collection<BindableService> services) {
         checkArgument(!services.isEmpty(), "Argument 'services' cannot be empty");
 
         this.channel = channel;
 
-        for (BindableService service : services) {
-            ServerServiceDefinition serverServiceDefinition = service.bindService();
-            for (ServerMethodDefinition<?, ?> serverMethodDefinition : serverServiceDefinition.getMethods()) {
-                MethodDescriptor<?, ?> methodDescriptor = serverMethodDefinition.getMethodDescriptor();
+        for (val service : services) {
+            val serverServiceDefinition = service.bindService();
+            for (val serverMethodDefinition : serverServiceDefinition.getMethods()) {
+                val methodDescriptor = serverMethodDefinition.getMethodDescriptor();
                 methods.put(methodDescriptor.getFullMethodName(), methodDescriptor);
             }
         }
     }
 
     @Override
-    public Response exchange(@NonNull Request request) {
+    public Response exchange(@NonNull final Request request) {
         if (request.method() != null && request.method() != HttpMethod.POST) {
             throw new IllegalArgumentException("POST request method is supported only");
         }
@@ -73,27 +74,27 @@ public class GrpcHttpVerifier implements HttpVerifier {
             throw new IllegalArgumentException("Request body is required");
         }
 
-        String methodName = GrpcUtils.extractMethodName(request.path());
+        val methodName = GrpcUtils.extractMethodName(request.path());
 
-        MethodDescriptor<?, ?> grpcMethod = methods.get(methodName);
+        val grpcMethod = methods.get(methodName);
         if (grpcMethod == null) {
             throw new IllegalStateException("No gRPC method related to the given path");
         }
         if (!(grpcMethod.getSchemaDescriptor() instanceof ProtoMethodDescriptorSupplier)) {
             throw new IllegalStateException("No proto schema descriptor for the related gRPC method");
         }
-        Descriptors.MethodDescriptor protoMethod =
+        val protoMethod =
                 ((ProtoMethodDescriptorSupplier) grpcMethod.getSchemaDescriptor()).getMethodDescriptor();
         if (protoMethod == null) {
             throw new IllegalStateException("No proto method descriptor for the related gRPC method");
         }
 
-        Marshaller<DynamicMessage> inputMessageMarshaller =
+        val inputMessageMarshaller =
                 ProtoUtils.marshaller(DynamicMessage.getDefaultInstance(protoMethod.getInputType()));
-        Marshaller<DynamicMessage> outputMessageMarshaller =
+        val outputMessageMarshaller =
                 ProtoUtils.marshaller(DynamicMessage.getDefaultInstance(protoMethod.getOutputType()));
 
-        ClientCall<DynamicMessage, DynamicMessage> call =
+        val call =
                 channel.newCall(
                         grpcMethod.toBuilder(inputMessageMarshaller, outputMessageMarshaller)
                                 .build(),
@@ -109,10 +110,10 @@ public class GrpcHttpVerifier implements HttpVerifier {
     }
 
     private Response unaryExchange(
-            @NonNull ClientCall<DynamicMessage, DynamicMessage> call,
-            @NonNull Request request,
-            @NonNull Descriptor inputMessageType) {
-        DynamicMessage inputMessage;
+            @NonNull final ClientCall<DynamicMessage, DynamicMessage> call,
+            @NonNull final Request request,
+            @NonNull final Descriptor inputMessageType) {
+        final DynamicMessage inputMessage;
         try {
             inputMessage = messageFromJson(request.body().asString(), inputMessageType);
         } catch (IOException e) {
@@ -120,8 +121,9 @@ public class GrpcHttpVerifier implements HttpVerifier {
         }
 
         try {
-            DynamicMessage outputMessage = ClientCalls.blockingUnaryCall(call, inputMessage);
-            return Response.builder()
+            val outputMessage = ClientCalls.blockingUnaryCall(call, inputMessage);
+            return Response
+                    .builder()
                     .statusCode(HttpStatus.OK)
                     .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
                     .header("grpc-encoding", "identity")
@@ -129,7 +131,7 @@ public class GrpcHttpVerifier implements HttpVerifier {
                     .body(messageAsMap(outputMessage).toString())
                     .build();
         } catch (Exception e) {
-            Status status = Status.fromThrowable(e);
+            val status = Status.fromThrowable(e);
             return Response
                     .builder()
                     .statusCode(HttpStatus.OK)
@@ -141,10 +143,10 @@ public class GrpcHttpVerifier implements HttpVerifier {
     }
 
     private Response clientStreamingExchange(
-            @NonNull ClientCall<DynamicMessage, DynamicMessage> call,
-            @NonNull Request request,
-            @NonNull Descriptor inputMessageType) {
-        List<DynamicMessage> inputMessages;
+            @NonNull final ClientCall<DynamicMessage, DynamicMessage> call,
+            @NonNull final Request request,
+            @NonNull final Descriptor inputMessageType) {
+        final List<DynamicMessage> inputMessages;
         try {
             inputMessages = messagesFromJson(request.body().asString(), inputMessageType);
         } catch (IOException e) {
@@ -153,13 +155,14 @@ public class GrpcHttpVerifier implements HttpVerifier {
         }
 
         try {
-            GrpcSingleResponseFuture<DynamicMessage> outputFuture = new GrpcSingleResponseFuture<>();
-            StreamObserver<DynamicMessage> inputObserver = ClientCalls.asyncClientStreamingCall(call, outputFuture);
+            val outputFuture = new GrpcSingleResponseFuture<DynamicMessage>();
+            val inputObserver = ClientCalls.asyncClientStreamingCall(call, outputFuture);
             inputMessages.forEach(inputObserver::onNext);
             inputObserver.onCompleted();
 
-            DynamicMessage outputMessage = outputFuture.get();
-            return Response.builder()
+            val outputMessage = outputFuture.get();
+            return Response
+                    .builder()
                     .statusCode(HttpStatus.OK)
                     .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
                     .header("grpc-encoding", "identity")
@@ -167,7 +170,7 @@ public class GrpcHttpVerifier implements HttpVerifier {
                     .body(messageAsMap(outputMessage).toString())
                     .build();
         } catch (Exception e) {
-            Status status = Status.fromThrowable(e);
+            val status = Status.fromThrowable(e);
             return Response
                     .builder()
                     .statusCode(HttpStatus.OK)
@@ -179,10 +182,10 @@ public class GrpcHttpVerifier implements HttpVerifier {
     }
 
     private Response serverStreamingExchange(
-            @NonNull ClientCall<DynamicMessage, DynamicMessage> call,
-            @NonNull Request request,
-            @NonNull Descriptor inputMessageType) {
-        DynamicMessage inputMessage;
+            @NonNull final ClientCall<DynamicMessage, DynamicMessage> call,
+            @NonNull final Request request,
+            @NonNull final Descriptor inputMessageType) {
+        final DynamicMessage inputMessage;
         try {
             inputMessage = messageFromJson(request.body().asString(), inputMessageType);
         } catch (IOException e) {
@@ -190,9 +193,9 @@ public class GrpcHttpVerifier implements HttpVerifier {
         }
 
         try {
-            Iterator<DynamicMessage> outputMessages =
-                    ClientCalls.blockingServerStreamingCall(call, inputMessage);
-            return Response.builder()
+            val outputMessages = ClientCalls.blockingServerStreamingCall(call, inputMessage);
+            return Response
+                    .builder()
                     .statusCode(HttpStatus.OK)
                     .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
                     .header("grpc-encoding", "identity")
@@ -204,7 +207,7 @@ public class GrpcHttpVerifier implements HttpVerifier {
                             .toString())
                     .build();
         } catch (Exception e) {
-            Status status = Status.fromThrowable(e);
+            val status = Status.fromThrowable(e);
             return Response
                     .builder()
                     .statusCode(HttpStatus.OK)
@@ -216,10 +219,10 @@ public class GrpcHttpVerifier implements HttpVerifier {
     }
 
     private Response bidiStreamingExchange(
-            @NonNull ClientCall<DynamicMessage, DynamicMessage> call,
-            @NonNull Request request,
-            @NonNull Descriptor inputMessageType) {
-        List<DynamicMessage> inputMessages;
+            @NonNull final ClientCall<DynamicMessage, DynamicMessage> call,
+            @NonNull final Request request,
+            @NonNull final Descriptor inputMessageType) {
+        final List<DynamicMessage> inputMessages;
         try {
             inputMessages = messagesFromJson(request.body().asString(), inputMessageType);
         } catch (IOException e) {
@@ -228,13 +231,14 @@ public class GrpcHttpVerifier implements HttpVerifier {
         }
 
         try {
-            GrpcMultipleResponseFuture<DynamicMessage> outputFuture = new GrpcMultipleResponseFuture<>();
-            StreamObserver<DynamicMessage> inputObserver = ClientCalls.asyncBidiStreamingCall(call, outputFuture);
+            val outputFuture = new GrpcMultipleResponseFuture<DynamicMessage>();
+            val inputObserver = ClientCalls.asyncBidiStreamingCall(call, outputFuture);
             inputMessages.forEach(inputObserver::onNext);
             inputObserver.onCompleted();
 
-            List<DynamicMessage> outputMessages = outputFuture.get();
-            return Response.builder()
+            val outputMessages = outputFuture.get();
+            return Response
+                    .builder()
                     .statusCode(HttpStatus.OK)
                     .header(HttpHeaders.CONTENT_TYPE, GrpcUtil.CONTENT_TYPE_GRPC)
                     .header("grpc-encoding", "identity")
@@ -246,7 +250,7 @@ public class GrpcHttpVerifier implements HttpVerifier {
                             .toString())
                     .build();
         } catch (Exception e) {
-            Status status = Status.fromThrowable(e);
+            val status = Status.fromThrowable(e);
             return Response
                     .builder()
                     .statusCode(HttpStatus.OK)

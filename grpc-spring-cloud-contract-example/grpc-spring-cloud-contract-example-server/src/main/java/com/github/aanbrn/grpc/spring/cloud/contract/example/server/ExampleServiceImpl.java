@@ -1,14 +1,7 @@
 package com.github.aanbrn.grpc.spring.cloud.contract.example.server;
 
-import com.github.aanbrn.spring.cloud.contract.example.BidiStreamingRequest;
-import com.github.aanbrn.spring.cloud.contract.example.BidiStreamingResponse;
-import com.github.aanbrn.spring.cloud.contract.example.ClientStreamingRequest;
-import com.github.aanbrn.spring.cloud.contract.example.ClientStreamingResponse;
+import com.github.aanbrn.spring.cloud.contract.example.*;
 import com.github.aanbrn.spring.cloud.contract.example.ExampleServiceGrpc.ExampleServiceImplBase;
-import com.github.aanbrn.spring.cloud.contract.example.ServerStreamingRequest;
-import com.github.aanbrn.spring.cloud.contract.example.ServerStreamingResponse;
-import com.github.aanbrn.spring.cloud.contract.example.UnaryRequest;
-import com.github.aanbrn.spring.cloud.contract.example.UnaryResponse;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -18,7 +11,8 @@ import net.devh.boot.grpc.server.service.GrpcService;
 @GrpcService
 class ExampleServiceImpl extends ExampleServiceImplBase {
     @Override
-    public void unaryMethod(@NonNull UnaryRequest request, @NonNull StreamObserver<UnaryResponse> responseObserver) {
+    public void unaryMethod(
+            @NonNull final UnaryRequest request, @NonNull final StreamObserver<UnaryResponse> responseObserver) {
         responseObserver.onNext(
                 UnaryResponse
                         .newBuilder()
@@ -29,18 +23,18 @@ class ExampleServiceImpl extends ExampleServiceImplBase {
 
     @Override
     public StreamObserver<ClientStreamingRequest> clientStreamingMethod(
-            @NonNull StreamObserver<ClientStreamingResponse> responseObserver) {
+            @NonNull final StreamObserver<ClientStreamingResponse> responseObserver) {
         return new StreamObserver<>() {
 
             private final ClientStreamingResponse.Builder responseBuilder = ClientStreamingResponse.newBuilder();
 
             @Override
-            public void onNext(@NonNull ClientStreamingRequest request) {
+            public void onNext(@NonNull final ClientStreamingRequest request) {
                 responseBuilder.addValue(request.getValue());
             }
 
             @Override
-            public void onError(@NonNull Throwable t) {
+            public void onError(@NonNull final Throwable t) {
                 throw new StatusRuntimeException(Status.fromThrowable(t));
             }
 
@@ -54,8 +48,8 @@ class ExampleServiceImpl extends ExampleServiceImplBase {
 
     @Override
     public void serverStreamingMethod(
-            @NonNull ServerStreamingRequest request,
-            @NonNull StreamObserver<ServerStreamingResponse> responseObserver) {
+            @NonNull final ServerStreamingRequest request,
+            @NonNull final StreamObserver<ServerStreamingResponse> responseObserver) {
         for (int i = 0; i < request.getValueCount(); i++) {
             responseObserver.onNext(
                     ServerStreamingResponse
@@ -71,7 +65,7 @@ class ExampleServiceImpl extends ExampleServiceImplBase {
             StreamObserver<BidiStreamingResponse> responseObserver) {
         return new StreamObserver<>() {
             @Override
-            public void onNext(@NonNull BidiStreamingRequest request) {
+            public void onNext(@NonNull final BidiStreamingRequest request) {
                 responseObserver.onNext(
                         BidiStreamingResponse
                                 .newBuilder()
@@ -80,7 +74,7 @@ class ExampleServiceImpl extends ExampleServiceImplBase {
             }
 
             @Override
-            public void onError(@NonNull Throwable t) {
+            public void onError(@NonNull final Throwable t) {
                 throw new StatusRuntimeException(Status.fromThrowable(t));
             }
 

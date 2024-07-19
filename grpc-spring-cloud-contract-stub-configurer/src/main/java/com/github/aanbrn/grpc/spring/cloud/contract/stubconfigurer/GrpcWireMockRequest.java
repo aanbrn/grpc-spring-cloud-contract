@@ -2,17 +2,12 @@ package com.github.aanbrn.grpc.spring.cloud.contract.stubconfigurer;
 
 import com.github.tomakehurst.wiremock.common.Encoding;
 import com.github.tomakehurst.wiremock.common.Strings;
-import com.github.tomakehurst.wiremock.http.ContentTypeHeader;
-import com.github.tomakehurst.wiremock.http.Cookie;
-import com.github.tomakehurst.wiremock.http.HttpHeader;
-import com.github.tomakehurst.wiremock.http.HttpHeaders;
-import com.github.tomakehurst.wiremock.http.QueryParameter;
-import com.github.tomakehurst.wiremock.http.Request;
-import com.github.tomakehurst.wiremock.http.RequestMethod;
+import com.github.tomakehurst.wiremock.http.*;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.DynamicMessage;
 import io.grpc.internal.GrpcUtil;
 import lombok.NonNull;
+import lombok.val;
 import wiremock.com.google.common.base.Optional;
 
 import java.util.Collection;
@@ -33,7 +28,7 @@ class GrpcWireMockRequest implements Request {
 
     private final String body;
 
-    GrpcWireMockRequest(@NonNull MethodDescriptor methodDescriptor, DynamicMessage inputMessage) {
+    GrpcWireMockRequest(@NonNull final MethodDescriptor methodDescriptor, final DynamicMessage inputMessage) {
         this.url = "/" + methodDescriptor.getService().getFullName() + "/" + methodDescriptor.getName();
         if (inputMessage != null) {
             this.body = messageAsMap(inputMessage).toString();
@@ -42,10 +37,10 @@ class GrpcWireMockRequest implements Request {
         }
     }
 
-    GrpcWireMockRequest(@NonNull MethodDescriptor methodDescriptor, List<DynamicMessage> inputMessages) {
+    GrpcWireMockRequest(@NonNull final MethodDescriptor methodDescriptor, final List<DynamicMessage> inputMessages) {
         this.url = "/" + methodDescriptor.getService().getFullName() + "/" + methodDescriptor.getName();
         if (inputMessages != null) {
-            this.body = messagesAsList(inputMessages.iterator()).toString();
+            this.body = messagesAsList(inputMessages).toString();
         } else {
             this.body = null;
         }
@@ -88,7 +83,7 @@ class GrpcWireMockRequest implements Request {
 
     @Override
     public String getHeader(String key) {
-        HttpHeader header = headers.getHeader(key);
+        val header = headers.getHeader(key);
         if (header.isPresent()) {
             return header.firstValue();
         } else {

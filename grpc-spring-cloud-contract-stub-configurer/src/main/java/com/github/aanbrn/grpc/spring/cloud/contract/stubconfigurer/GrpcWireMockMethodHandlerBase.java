@@ -1,12 +1,12 @@
 package com.github.aanbrn.grpc.spring.cloud.contract.stubconfigurer;
 
-import com.github.tomakehurst.wiremock.http.HttpHeader;
 import com.github.tomakehurst.wiremock.http.HttpResponder;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.DynamicMessage;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.NonNull;
+import lombok.val;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,12 +18,13 @@ import static java.lang.Integer.parseInt;
 abstract class GrpcWireMockMethodHandlerBase {
 
     protected final HttpResponder unaryResponder(
-            @NonNull MethodDescriptor methodDescriptor, @NonNull StreamObserver<DynamicMessage> responseObserver) {
+            @NonNull final MethodDescriptor methodDescriptor,
+            @NonNull final StreamObserver<DynamicMessage> responseObserver) {
         return (request, response) -> {
-            HttpHeader statusHeader = response.getHeaders().getHeader("grpc-status");
+            val statusHeader = response.getHeaders().getHeader("grpc-status");
             if (!statusHeader.isPresent()
                     || Status.fromCodeValue(parseInt(statusHeader.firstValue())) == Status.OK) {
-                DynamicMessage outputMessage;
+                final DynamicMessage outputMessage;
                 try {
                     outputMessage = messageFromJson(response.getBodyAsString(), methodDescriptor.getOutputType());
                 } catch (IOException e) {
@@ -32,8 +33,8 @@ abstract class GrpcWireMockMethodHandlerBase {
                 responseObserver.onNext(outputMessage);
                 responseObserver.onCompleted();
             } else {
-                Status status = Status.fromCodeValue(parseInt(statusHeader.firstValue()));
-                HttpHeader messageHeader = response.getHeaders().getHeader("grpc-message");
+                var status = Status.fromCodeValue(parseInt(statusHeader.firstValue()));
+                val messageHeader = response.getHeaders().getHeader("grpc-message");
                 if (messageHeader.isPresent()) {
                     status = status.withDescription(messageHeader.firstValue());
                 }
@@ -43,12 +44,13 @@ abstract class GrpcWireMockMethodHandlerBase {
     }
 
     protected final HttpResponder streamingResponder(
-            @NonNull MethodDescriptor methodDescriptor, @NonNull StreamObserver<DynamicMessage> responseObserver) {
+            @NonNull final MethodDescriptor methodDescriptor,
+            @NonNull final StreamObserver<DynamicMessage> responseObserver) {
         return (request, response) -> {
-            HttpHeader statusHeader = response.getHeaders().getHeader("grpc-status");
+            val statusHeader = response.getHeaders().getHeader("grpc-status");
             if (!statusHeader.isPresent()
                     || Status.fromCodeValue(parseInt(statusHeader.firstValue())) == Status.OK) {
-                List<DynamicMessage> outputMessages;
+                final List<DynamicMessage> outputMessages;
                 try {
                     outputMessages = messagesFromJson(response.getBodyAsString(), methodDescriptor.getOutputType());
                 } catch (IOException e) {
@@ -57,8 +59,8 @@ abstract class GrpcWireMockMethodHandlerBase {
                 outputMessages.forEach(responseObserver::onNext);
                 responseObserver.onCompleted();
             } else {
-                Status status = Status.fromCodeValue(parseInt(statusHeader.firstValue()));
-                HttpHeader messageHeader = response.getHeaders().getHeader("grpc-message");
+                var status = Status.fromCodeValue(parseInt(statusHeader.firstValue()));
+                val messageHeader = response.getHeaders().getHeader("grpc-message");
                 if (messageHeader.isPresent()) {
                     status = status.withDescription(messageHeader.firstValue());
                 }

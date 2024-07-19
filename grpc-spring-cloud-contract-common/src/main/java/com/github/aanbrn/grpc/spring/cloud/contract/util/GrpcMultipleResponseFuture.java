@@ -13,12 +13,12 @@ public class GrpcMultipleResponseFuture<T extends Message> extends AbstractFutur
     private final List<T> messages = new ArrayList<>();
 
     @Override
-    public void onNext(T message) {
+    public void onNext(final T message) {
         messages.add(message);
     }
 
     @Override
-    public void onError(Throwable t) {
+    public void onError(final Throwable t) {
         setException(t);
     }
 

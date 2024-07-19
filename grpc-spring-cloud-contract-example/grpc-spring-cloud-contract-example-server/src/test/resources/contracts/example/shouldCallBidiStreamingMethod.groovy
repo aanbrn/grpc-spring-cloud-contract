@@ -1,7 +1,6 @@
 package contracts.example
 
 import org.springframework.cloud.contract.spec.Contract
-import org.springframework.cloud.contract.verifier.http.ContractVerifierHttpMetaData
 
 Contract.make {
     description 'should call the client streaming method'

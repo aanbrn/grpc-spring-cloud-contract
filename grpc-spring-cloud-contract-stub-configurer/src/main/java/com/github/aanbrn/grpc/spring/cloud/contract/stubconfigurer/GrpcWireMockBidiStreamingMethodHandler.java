@@ -24,7 +24,7 @@ class GrpcWireMockBidiStreamingMethodHandler
     private final StubRequestHandler stubRequestHandler;
 
     @Override
-    public StreamObserver<DynamicMessage> invoke(StreamObserver<DynamicMessage> responseObserver) {
+    public StreamObserver<DynamicMessage> invoke(final StreamObserver<DynamicMessage> responseObserver) {
         return new StreamObserver<>() {
 
             private final List<DynamicMessage> inputMessages = new ArrayList<>();

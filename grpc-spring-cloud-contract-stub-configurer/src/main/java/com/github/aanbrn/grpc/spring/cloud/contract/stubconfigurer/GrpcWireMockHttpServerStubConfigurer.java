@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.jetty9.JettyHttpServerFactory;
 import com.github.tomakehurst.wiremock.jetty94.Jetty94HttpServer;
 import io.grpc.ServiceDescriptor;
 import lombok.NonNull;
+import lombok.val;
 import org.springframework.cloud.contract.stubrunner.HttpServerStubConfiguration;
 import org.springframework.cloud.contract.stubrunner.provider.wiremock.WireMockHttpServerStubConfigurer;
 import wiremock.org.eclipse.jetty.server.handler.HandlerCollection;
@@ -22,7 +23,7 @@ public abstract class GrpcWireMockHttpServerStubConfigurer extends WireMockHttpS
 
     private final List<ServiceDescriptor> services;
 
-    protected GrpcWireMockHttpServerStubConfigurer(@NonNull Collection<ServiceDescriptor> services) {
+    protected GrpcWireMockHttpServerStubConfigurer(@NonNull final Collection<ServiceDescriptor> services) {
         checkArgument(!services.isEmpty(), "Argument 'services' cannot be empty");
 
         this.services = List.copyOf(services);
@@ -30,22 +31,22 @@ public abstract class GrpcWireMockHttpServerStubConfigurer extends WireMockHttpS
 
     @Override
     public WireMockConfiguration configure(
-            @NonNull WireMockConfiguration wireMockConfiguration,
-            HttpServerStubConfiguration httpServerStubConfiguration) {
+            @NonNull final WireMockConfiguration wireMockConfiguration,
+            final HttpServerStubConfiguration httpServerStubConfiguration) {
         return wireMockConfiguration.httpServerFactory(
                 new JettyHttpServerFactory() {
                     @Override
                     public HttpServer buildHttpServer(
-                            Options options,
-                            AdminRequestHandler adminRequestHandler,
-                            StubRequestHandler stubRequestHandler) {
+                            final Options options,
+                            final AdminRequestHandler adminRequestHandler,
+                            final StubRequestHandler stubRequestHandler) {
                         return new Jetty94HttpServer(options, adminRequestHandler, stubRequestHandler) {
                             @Override
                             protected HandlerCollection createHandler(
-                                    Options options,
-                                    AdminRequestHandler adminRequestHandler,
-                                    StubRequestHandler stubRequestHandler) {
-                                HandlerCollection handlers = new HandlerCollection();
+                                    final Options options,
+                                    final AdminRequestHandler adminRequestHandler,
+                                    final StubRequestHandler stubRequestHandler) {
+                                val handlers = new HandlerCollection();
                                 handlers.addHandler(
                                         new GrpcWireMockHandler(
                                                 super.createHandler(options, adminRequestHandler, stubRequestHandler),
